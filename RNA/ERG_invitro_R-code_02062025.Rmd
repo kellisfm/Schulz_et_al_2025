@@ -1,0 +1,1227 @@
+---
+title: "ERG_invitro_R-code_02062025"
+author: "Steven Botts, Fish and Howe Labs"
+date: "2025-06-02"
+output: html_document
+toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Install/load necessary packages
+
+```{r message=FALSE}
+library(ggplot2)
+library(ggrastr)
+library(ggpubr)
+library(ggh4x)
+library(RColorBrewer)
+library(tidyverse)
+library(dplyr)
+library(DESeq2)
+library(vsn)
+library(pheatmap)
+library(ComplexHeatmap)
+library(PCAtools)
+library(UCell)
+library(clusterProfiler)
+library(AnnotationDbi)
+library(org.Mm.eg.db)
+library(org.Hs.eg.db)
+library(ggradar)
+library(enrichR)
+library(Seurat)
+library(SeuratWrappers)
+library(cowplot)
+library(Rsubread)
+library(stringr)
+reticulate::use_python("/opt/anaconda3/bin/python", required=T)
+```
+
+### Set theme for ggplot
+
+```{r}
+theme_set(theme_linedraw(base_size = 20) +
+            theme(
+              axis.title.y = element_text(face = "bold", margin = margin(0,20,0,0), size = rel(1.1), color = 'black'),
+              axis.title.x = element_text(hjust = 0.5, face = "bold", margin = margin(20,0,0,0), size = rel(1.1), color = 'black'),
+              plot.title = element_text(hjust = 0.5)
+            ))
+group.colors <- c(
+  "Ctrl.24h" = "#90bff9",
+  "ERG.24h" = "#ffa0a0",
+  "Ctrl.72h" = "#00a6ff",
+  "ERG.72h" = "#ff2a00",
+  "Ctrl.Ch" = "#347db7",
+  "ERG.Ch" = "#e3191b")
+```
+
+### Define gene and pathway lists
+
+```{r}
+EC.markers.human <- c("A2M", "ACKR1", "ACVRL1", "ADAM15", "ADAMTS1", "ADAMTS4",  "ADAMTS9", "ADCY4", "ADGRF5", "ADGRL4", "ADM5", "AFAP1L1", "ANXA2R",  "APLN", "APLNR", "APOL3", "APOLD1", "AQP1", "ARAP3", "ARHGAP29",  "ARHGAP31", "ARHGEF15", "ART4", "ATOH8", "AVPR2", "BCL6B", "BDKRB2",  "BMP6", "BMPR2", "BMX", "C1QTNF5", "C1QTNF9", "C20orf204", "C2CD4B",  "C2CD4C", "CALCRL", "CALHM5", "CARD10", "CARD6", "CASKIN2", "CASP12",  "CAV1", "CAVIN1", "CAVIN2", "CCDC68", "CCDC85B", "CCL14", "CCL23",  "CCM2L", "CCN2", "CD34", "CD93", "CDH24", "CDH5", "CLDN5", "CLEC14A",  "CLEC1A", "CLEC1B", "CLEC3B", "CLEC4M", "CLIC2", "CNTNAP3B",  "COL15A1", "COL4A1", "CPLX1", "CPXM2", "CRHBP", "CRIP2", "CSF3",  "CTHRC1", "CX3CL1", "CXCL12", "CYP1A1", "CYTL1", "CYYR1", "DCHS1",  "DEPP1", "DIPK1B", "DIPK2B", "DKK2", "DLL4", "DNASE1L3", "DOC2B",  "DOCK6", "DYNLT5", "DYSF", "EBF3", "ECSCR", "EDN1", "EDNRB",  "EFCC1", "EFNB2", "EGFL7", "EHD3", "ELFN1", "ELK3", "EMCN", "EMP1",  "ENG", "ENSG00000284969", "ENTPD1", "EPAS1", "EPHB4", "ERG",  "ESAM", "ESM1", "ETS1", "EXOC3L1", "EXOC3L2", "F2R", "F2RL3",  "F8", "FAM107A", "FAM110D", "FAM124B", "FAM167B", "FAM241A",  "FAM43A", "FAT4", "FCGR2B", "FCN2", "FCN3", "FGD5", "FGF23",  "FLI1", "FLT1", "FMO2", "FOXC1", "FOXC2", "FOXF1", "FZD4", "GALNT15",  "GASK1B", "GBP4", "GDF3", "GGT5", "GIMAP1", "GIMAP4", "GIMAP5",  "GIMAP6", "GIMAP7", "GIMAP8", "GIPC3", "GJA4", "GNG11", "GPR146",  "GPR4", "GPR68", "GRAP", "GRAPL", "HEG1", "HHEX", "HIF3A", "HLA-E",  "HLX", "HMCN1", "HOXD10", "HOXD9", "HSPA12B", "HSPG2", "HYAL2",  "ICAM1", "ICAM2", "ICAM4", "IFI27", "IFI44", "IFI44L", "IFITM1",  "IGFBP4", "IL18BP", "IL33", "IL3RA", "IL6", "ITGA1", "ITGA10",  "ITM2A", "JAG2", "JAM2", "JCAD", "KANK3", "KCTD12", "KDR", "KIF17",  "KIF26A", "KLF2", "LAYN", "LCN6", "LDLRAD2", "LEPR", "LIFR",
+"LIMS2", "LMCD1", "LMO2", "LRRC32", "LRRC70", "MADCAM1", "MAP3K6",  "MAPK11", "MAPK12", "MCAM", "MCF2L", "MEOX1", "MEOX2", "MFNG",  "MLKL", "MMRN2", "MRTFB", "MYCT1", "NES", "NEURL1B", "NHSL2",  "NOS3", "NOSTRIN", "NOTCH1", "NOTCH4", "NOVA2", "NPDC1", "NPR1",  "NR5A2", "NRN1", "NRP1", "NUAK1", "OIT3", "OLFM1", "OLFML2A",  "OR52N5", "OSMR", "PABPC4L", "PALM2AKAP2", "PALMD", "PCDH1",  "PCDH12", "PCDH17", "PDE2A", "PDGFB", "PEAR1", "PECAM1", "PGM5",  "PIK3R3", "PKHD1L1", "PKN3", "PLA1A", "PLAT", "PLEKHG1", "PLSCR4",  "PLVAP", "PLXND1", "PODXL", "POSTN", "PRKCH", "PRSS23", "PRX",  "PTCHD3", "PTPRB", "PXDN", "QRFPR", "RAMP2", "RAMP3", "RAPGEF3",  "RASA4", "RASIP1", "RASSF9", "RFLNB", "RGS3", "RHOJ", "RIPOR1",  "RND1", "ROBO4", "RPGR", "RSPO3", "S1PR1", "SCARF1", "SELE",  "SELP", "SEMA3F", "SEMA6B", "SH2D3C", "SHANK3", "SHE", "SHISA3",  "SLC2A3", "SLC9A3R2", "SLCO2A1", "SLCO4A1", "SMAD1", "SMAD6",  "SNAI1", "SNCG", "SNRK", "SOCS2", "SOCS3", "SOX17", "SOX18",  "SOX7", "SPAAR", "SPARC", "SPARCL1", "SPNS2", "SPRY1", "SPRY4",  "SRPX", "ST8SIA6", "STAB1", "STAB2", "STARD8", "STC1", "STING1",  "STOM", "SULT1C4", "SWAP70", "SYT15", "SYT15B", "TAL1", "TAS2R31",  "TBXA2R", "TEK", "TGFBR2", "TGFBR3", "TGM2", "THBD", "THSD1",  "TIE1", "TIMP3", "TM4SF1", "TM4SF18", "TMEM100", "TMEM121", "TMEM204",  "TMEM255B", "TMEM273", "TMEM44", "TMEM88", "TMTC1", "TNFRSF10D",  "TNFRSF4", "TNS2", "TPO", "TRAPPC3L", "TSPAN18", "TSPAN7", "USHBP1",  "VAMP5", "VCAM1", "VEGFC", "VWF", "WWTR1", "XAF1", "ZNF366",  "ZNF792", "FLT4", "GJA5", "LYVE1")
+EndMT.markers.human <- c("ABCA10", "ABCA6", "ABCA8", "ABCA9", "ABCC9", "ABI3BP",  "ACKR3", "ACKR4", "ACVRL1", "ADAM33", "ADAMTS1", "ADAMTS12",  "ADAMTS15", "ADAMTS2", "ADAMTS4", "ADAMTS5", "ADAMTS8", "ADAMTSL2",  "ADGRA2", "ADGRD1", "ADH1B", "ADRA2C", "AEBP1", "AGTR1", "ALX4",  "ANGPT1", "ANGPTL1", "ANGPTL2", "ANGPTL5", "ANKRD35", "AOC3",  "APCDD1L", "APOD", "ARSI", "ASPN", "AXL", "B3GNT9", "BARX1",  "BDKRB2", "BGN", "BMP4", "BMP5", "BOC", "C11orf96", "C16orf89",  "C1QTNF1", "C1QTNF2", "C1QTNF5", "C1QTNF7", "C1R", "C1S", "C7",  "CALHM2", "CALHM5", "CCDC80", "CCL11", "CCL14", "CCL19", "CCL23",  "CCL26", "CCL8", "CCN1", "CCN2", "CCN3", "CCN4", "CCN5", "CD248",  "CD34", "CD70", "CDC42EP2", "CFD", "CFH", "CHRD", "CHRDL1", "CILP",  "CLDN6", "CLEC11A", "CLEC1B", "CLEC3B", "CLEC4M", "CLMP", "COL12A1",  "COL14A1", "COL15A1", "COL1A1", "COL1A2", "COL3A1", "COL4A1",  "COL4A2", "COL5A1", "COL5A2", "COL6A1", "COL6A2", "COL6A3", "COL6A5",  "COL6A6", "COL8A2", "COMP", "COPZ2", "CPXM1", "CPZ", "CRHBP",  "CRISPLD2", "CRLF1", "CSF1", "CTHRC1", "CTSK", "CXCL12", "CXCL14",  "CYBRD1", "CYGB", "CYP1B1", "CYP2W1", "DBN1", "DCHS1", "DCN",  "DDR2", "DKK2", "DNASE1L3", "DPT", "EBF1", "EBF2", "EBF3", "ECM1",  "ECM2", "EFEMP1", "EFEMP2", "ELANE", "ELN", "EMILIN1", "EN1",  "F10", "F2R", "F2RL2", "FAM167B", "FAM180A", "FAM180B", "FAM43B",  "FAP", "FAT4", "FBLN1", "FBLN2", "FBLN5", "FBLN7", "FBN1", "FCGR2B",  "FCN2", "FCN3", "FGF10", "FGF16", "FGF7", "FGFR1", "FIBIN", "FKBP10",  "FKBP7", "FMO2", "FMOD", "FN1", "FNDC1", "FOXF1", "FOXF2", "FST",  "FSTL1", "FZD4", "GABRP", "GALNT15", "GALNT16", "GAS1", "GAS7",  "GDF10", "GDF6", "GEM", "GFPT2", "GFRA1", "GGT5", "GLT8D2", "GPC3",  "GPNMB", "GPX8", "GSC", "GSN", "GSTM5", "GXYLT2", "HAND1", "HAPLN1",  "HAS2", "HGF", "HIC1", "HMCN1", "HMCN2", "HMGA2", "HOXC6", "HOXC8",  "HS3ST3A1", "HSPB6", "HSPG2", "HTRA1", "HTRA3", "IGDCC4", "IGF1",  "IGFBP4", "IGFBP5", "IGFBP6", "IL15RA", "IL33", "IL6", "INHBA",  "INMT", "ISLR", "ISM1", "ITGA11", "ITGBL1", "ITIH5", "ITM2A",  "KCND1", "KCNE4", "KDELR3", "KERA", "KIAA0408", "KIRREL1", "KRT24",  "LAMA2", "LAMA4", "LAMB1", "LAMC1", "LEPR", "LHFPL6", "LHX5",  "LOX", "LOXL1", "LPAR4", "LRP1",
+"LRRC17", "LRRN4CL", "LTBP1",  "LTBP2", "LTBP4", "LUM", "MAMDC2", "MAP1LC3C", "MASP1", "MATN4",  "MEDAG", "MEOX2", "MFAP2", "MFAP4", "MFAP5", "MGP", "MMP11",  "MMP19", "MMP2", "MMP23B", "MMP27", "MMP3", "MN1", "MRC2", "MRGPRF",  "MSC", "MT1A", "MUSK", "MXRA5", "MXRA8", "MYOC", "NDN", "NFATC4",  "NID1", "NID2", "NNMT", "NOVA1", "NPPC", "NPR1", "NPY1R", "NPY5R",  "NR2F1", "NUPR1", "NXPH3", "OAF", "OGN", "OIT3", "OLFML1", "OLFML2A",  "OLFML2B", "OLFML3", "OMD", "OSR1", "P2RX2", "PCDH18", "PCDHB11",  "PCDHB12", "PCDHB15", "PCDHB16", "PCDHB3", "PCDHB4", "PCDHGA12",  "PCDHGA2", "PCDHGA3", "PCDHGB7", "PCDHGC3", "PCOLCE", "PCOLCE2",  "PDCD1LG2", "PDGFD", "PDGFRA", "PDGFRB", "PDGFRL", "PI16", "PKD1L2",  "PLA2G2A", "PLAC9", "PLAGL1", "PLAT", "PLPP3", "PMP22", "PODN",  "POGLUT3", "POSTN", "PRDM6", "PRELP", "PRRX1", "PRRX2", "PTGDR2",  "PTGFR", "PTX3", "PXDN", "RCN3", "RIPOR3", "RSPO1", "RSPO3",  "S1PR3", "SCARA5", "SCARF2", "SCUBE3", "SDC2", "SERPINA3", "SERPINE1",  "SERPINF1", "SERPING1", "SERPINH1", "SFRP1", "SFRP2", "SFRP4",  "SHISA3", "SLIT3", "SMIM41", "SMOC2", "SNAI2", "SNED1", "SOD3",  "SOX11", "SP5", "SPARC", "SPARCL1", "SPOCD1", "SPON2", "SPRY1",  "SPRY2", "SRPX", "SRPX2", "SSC5D", "SSPN", "STAB1", "STAB2",  "SULF1", "SVEP1", "TAC3", "TBX15", "TBXA2R", "TCEAL7", "TCF21",  "TGFB3", "TGFBI", "TGFBR2", "TGFBR3", "THBS2", "THBS4", "THY1",  "TIMP1", "TIMP2", "TIMP3", "TMEM100", "TMEM119", "TMEM200B",  "TMEM204", "TMEM35B", "TNC", "TNFAIP6", "TNN", "TNXB", "TRABD2B",  "TRDV3", "TRIL", "TWIST1", "TWIST2", "VASN", "VCAN", "VEGFD",  "VIT", "VSTM2A", "WDR86", "WNT10B", "WNT11", "WNT2", "XG", "ACTA2",  "ATG5", "BMP2", "BMP7", "BMPR2", "CD44", "CD90", "CDH11", "CDH2",  "CLOCK", "CNN1", "COL8A1", "CTSL", "DES", "DUT", "FGF2", "GATA4",  "GATA6", "HDAC3", "HDAC9", "ID1", "KDM4B", "KLF2", "KLF4", "LARP7",  "LGALS3", "LTBP3", "LY6A", "MMP14", "MMP9", "MRTFA", "MYC", "NAMPT",  "NFATC1", "NFE2L2", "NOTCH3", "NOX4", "NR4A1", "PDGFA", "PDGFB",  "PLOD1", "S100A4", "SEMA7A", "SMAD2", "SMAD3", "SMAD4", "SMTN",  "SNAI1", "SOD2", "SOX2", "SP1", "TAGLN", "TGFB1", "TGFB2", "TGFBR1",  "TMSB4X", "VIM", "ZEB1", "ZEB2")
+
+immune.list <- c("phago", "leukocyte", "myeloid", "immune", "lymphocyte", "mononuclear cell", "granulocyte", "neutrophil", "T cell", "B cell", "macrophage", "mast cell", "eosinophil", "natural killer", "monocyte")
+inflammation.list <- c("inflammat", "cytokine", "tumor necrosis factor", "interleukin", "interferon", "chemokine", "NF-kappaB", "transforming growth factor beta", "activation")
+proliferation.list <- c("proliferation")
+lipid.list <- c("lipid", "lipoprotein", "cholesterol", "fatty acid", "triglyceride")
+endothelial.list <- c("endotheli", "vasculature", "vascular process")
+mesenchymal.list <- c("fibroblast", "mesenchym", "chondrocyte", "connective tissue")
+migration.list <- c("migration", "chemotaxis", "taxis", "locomo", "motility", "movement")
+adhesion.list <- c("adhesion", "matrix", "encapsulating structure", "extracellular structure", "junction", "cell-substrate", "permeability")
+angiogenesis.list <- c("angiogenesis", "vascular endothelial growth", "blood vessel", "vasculogenesis", "vasculature development", "artery development")
+```
+
+### Preprocess, align, and merge RNA-seq
+
+```{r}
+
+KD_reads_table <- read.csv("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG in vitro KD/ERG data latest/ERG RNA-seq/data.input/KE_salmon_counts_matrix.csv", row.names=1)
+KO_reads_table <- read.delim("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG in vitro KD/ERG data latest/ERG RNA-seq/data.input/KE_merged_readscount_formatted.tsv", row.names=1)
+metadata_table <- read.delim("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG in vitro KD/ERG data latest/ERG RNA-seq/data.input/SRB_ERG_KD_merged_metadata.txt")
+
+merged_table <- merge(KD_reads_table, KO_reads_table, by = "row.names", all = TRUE)
+merged_table[is.na(merged_table)] <- 0
+rownames(merged_table) <- merged_table$Row.names
+merged_table$Row.names <- NULL
+samples_to_keep <- metadata_table[, 1]
+merged_table_subset <- merged_table[, colnames(merged_table) %in% samples_to_keep]
+merged_table_subset <- subset(merged_table_subset, select = -WL1695)
+merged_table_subset <- merged_table_subset[rowSums(merged_table_subset) > 0, ]
+
+metadata_table <- metadata_table[metadata_table[, 1] != "WL1695", ]
+rownames(metadata_table) <- metadata_table[, 1]
+metadata_table[, 1] <- NULL
+
+metadata_table.KO <- metadata_table %>% filter(Group %in% c("Ctrl.Ch", "ERG.Ch"))
+samples_to_keep <- rownames(metadata_table.KO)
+merged_table_subset.KO <- merged_table_subset[, colnames(merged_table_subset) %in% samples_to_keep]
+merged_table_subset.KO <- merged_table_subset.KO[rowSums(merged_table_subset.KO) > 0, ]
+```
+
+### DESeq2 analysis
+
+```{r}
+dds_merged <- DESeqDataSetFromMatrix(countData = round(merged_table_subset),
+                                     colData = metadata_table,
+                                     design = ~ Group)
+
+smallestGroupSize <- 4
+keep <- rowSums(counts(dds_merged) >= 10) >= smallestGroupSize
+dds_merged_min <- dds_merged[keep,]
+
+dds_merged.KO <- DESeqDataSetFromMatrix(countData = round(merged_table_subset.KO),
+                                     colData = metadata_table.KO,
+                                     design = ~ Group)
+
+smallestGroupSize <- 5
+keep <- rowSums(counts(dds_merged.KO) >= 10) >= smallestGroupSize
+dds_merged_min.KO <- dds_merged.KO[keep,]
+
+dds_merged_min$Group <- relevel(dds_merged_min$Group, "Ctrl.24h")
+dds_merged_min_Ctrl.24h <- dds_merged_min
+dds_merged_min$Group <- relevel(dds_merged_min$Group, "Ctrl.72h")
+dds_merged_min_Ctrl.72h <- dds_merged_min
+dds_merged_min$Group <- relevel(dds_merged_min$Group, "Ctrl.Ch")
+dds_merged_min_Ctrl.Ch <- dds_merged_min
+
+dds_merged_min <- DESeq(dds_merged_min)
+dds_merged_min.KO <- DESeq(dds_merged_min.KO)
+dds_merged_min_Ctrl.24h <- DESeq(dds_merged_min_Ctrl.24h)
+dds_merged_min_Ctrl.72h <- DESeq(dds_merged_min_Ctrl.72h)
+dds_merged_min_Ctrl.Ch <- DESeq(dds_merged_min_Ctrl.Ch)
+
+SRB_DESeq2_ERG.24h_Ctrl.24h <- results (dds_merged_min_Ctrl.24h, contrast=c("Group","ERG.24h","Ctrl.24h"))
+SRB_DESeq2_ERG.72h_Ctrl.72h <- results (dds_merged_min_Ctrl.72h, contrast=c("Group","ERG.72h","Ctrl.72h"))
+SRB_DESeq2_ERG.Ch_Ctrl.Ch <- results (dds_merged_min_Ctrl.Ch, contrast=c("Group","ERG.Ch","Ctrl.Ch"))
+
+contrast.24h <- as.data.frame(SRB_DESeq2_ERG.24h_Ctrl.24h)
+contrast.24h <- contrast.24h[order(contrast.24h$padj), ]
+contrast.72h <- as.data.frame(SRB_DESeq2_ERG.72h_Ctrl.72h)
+contrast.72h <- contrast.72h[order(contrast.72h$padj), ]
+contrast.Ch <- as.data.frame(SRB_DESeq2_ERG.Ch_Ctrl.Ch)
+contrast.Ch <- contrast.Ch[order(contrast.Ch$padj), ]
+
+dds_merged_min_counts <- counts(dds_merged_min, normalized=TRUE)
+
+vsd_merged_min <- vst(dds_merged_min, blind=FALSE)
+vsd_merged_min.KO <- vst(dds_merged_min.KO, blind=FALSE)
+vsd_merged_min_write <- assay(vsd_merged_min)
+
+meanSdPlot(assay(dds_merged_min))
+meanSdPlot(assay(vsd_merged_min))
+```
+
+### Heatmap
+
+```{r}
+cdata <- colData(dds_merged_min)
+heatmap_merged <- pheatmap(assay(vsd_merged_min), cluster_rows=TRUE, show_rownames=FALSE, cluster_cols=TRUE, annotation_col=as.data.frame(cdata[,"Group"], row.names=rownames(cdata)), kmeans_k=100, cellwidth=10, cellheight=2.5, scale = 'row')
+heatmap_merged
+
+cdata.KO <- colData(dds_merged_min.KO)
+heatmap_merged.KO <- pheatmap(assay(vsd_merged_min.KO), cluster_rows=TRUE, show_rownames=FALSE, cluster_cols=TRUE, annotation_col=as.data.frame(cdata.KO[,"Group"], row.names=rownames(cdata.KO)), kmeans_k=100, cellwidth=10, cellheight=2.5, scale = 'row')
+heatmap_merged.KO
+```
+
+### PCA
+
+```{r}
+pca_merged <- pca(assay(vsd_merged_min), metadata=metadata_table)
+pca_merged_output <- as.data.frame(pca_merged$rotated)
+pca_merged_var <- pca_merged$sdev^2 / sum(pca_merged$sdev^2) * 100
+names(pca_merged_var) <- paste0("PC", 1:length(pca_merged_var))
+pca_merged_output$PercentVariation <- pca_merged_var
+
+pca_merged_biplot_PC1_PC2 <- biplot(pca_merged, hline = 0, hlineType ='solid', vline = 0, vlineType ='solid', lab = NULL, colby = 'Group', pointSize = 3, ellipse = TRUE, ellipseType = 't', ellipseLevel = 0.95, ellipseFill = TRUE, ellipseAlpha = 1/4, ellipseLineSize = 0, showLoadings = TRUE, ntopLoadings = 10, lengthLoadingsArrowsFactor = 1, sizeLoadingsNames = 4, colLoadingsNames = 'red4', legendPosition = 'right', legendLabSize = 13, legendIconSize = 3) + theme(aspect.ratio=1) + scale_color_manual(values = group.colors) 
+plot(pca_merged_biplot_PC1_PC2)
+
+pca_merged_biplot_PC2_PC3 <- biplot(pca_merged, x = 'PC2', y = 'PC3', xlim = c(-50,40), ylim = c(-40, 40), hline = 0, hlineType ='solid', vline = 0, vlineType ='solid', lab = NULL, colby = 'Group', pointSize = 3, ellipse = TRUE, ellipseType = 't', ellipseLevel = 0.95, ellipseFill = TRUE, ellipseAlpha = 1/4, ellipseLineSize = 0, legendPosition = 'right', legendLabSize = 13, legendIconSize = 3) + theme(aspect.ratio=1) + scale_color_manual(values = group.colors)
+plot(pca_merged_biplot_PC2_PC3)
+
+pca_merged.KO <- pca(assay(vsd_merged_min.KO), metadata=metadata_table.KO)
+pca_merged_output.KO <- as.data.frame(pca_merged.KO$rotated)
+pca_merged_var.KO <- pca_merged.KO$sdev^2 / sum(pca_merged.KO$sdev^2) * 100
+names(pca_merged_var.KO) <- paste0("PC", 1:length(pca_merged_var.KO))
+pca_merged_output.KO$PercentVariation <- pca_merged_var.KO
+
+pca_merged_biplot_PC1_PC2.KO <- biplot(pca_merged.KO, hline = 0, hlineType ='solid', vline = 0, vlineType ='solid', lab = NULL, colby = 'Group', pointSize = 3, ellipse = TRUE, ellipseType = 't', ellipseLevel = 0.95, ellipseFill = TRUE, ellipseAlpha = 1/4, ellipseLineSize = 0, showLoadings = TRUE, ntopLoadings = 10, lengthLoadingsArrowsFactor = 1, sizeLoadingsNames = 4, colLoadingsNames = 'red4', legendPosition = 'right', legendLabSize = 13, legendIconSize = 3) + theme(aspect.ratio=1) + ylim(c(-50,50)) + scale_color_manual(values = group.colors) 
+plot(pca_merged_biplot_PC1_PC2.KO) 
+```
+
+### UCell composite score analysis
+
+```{r}
+combined.results <- data.frame(
+  gene = rownames(SRB_DESeq2_ERG.24h_Ctrl.24h),
+  log2FC.24h = SRB_DESeq2_ERG.24h_Ctrl.24h$log2FoldChange,
+  padj.24h = SRB_DESeq2_ERG.24h_Ctrl.24h$padj,
+  log2FC.72h = SRB_DESeq2_ERG.72h_Ctrl.72h$log2FoldChange,
+  padj.72h = SRB_DESeq2_ERG.72h_Ctrl.72h$padj,
+  log2FC.Ch = SRB_DESeq2_ERG.Ch_Ctrl.Ch$log2FoldChange,
+  padj.Ch = SRB_DESeq2_ERG.Ch_Ctrl.Ch$padj
+)
+
+filtered.results <- combined.results[
+  combined.results$padj.24h < 0.05 |
+    combined.results$padj.72h < 0.05 |
+  combined.results$padj.Ch < 0.05, ]
+
+retained.genes.EC <- filtered.results[filtered.results$gene %in% EC.markers.human, ]
+EC.markers.sig <- retained.genes.EC$gene
+retained.genes.EndMT <- filtered.results[filtered.results$gene %in% EndMT.markers.human, ]
+EndMT.markers.sig <- retained.genes.EndMT$gene
+
+max_length <- max(length(retained.genes.EC$gene), length(retained.genes.EndMT$gene))
+gene.df <- data.frame(
+  EC.genes = c(retained.genes.EC$gene, rep(NA, max_length - length(retained.genes.EC$gene))),
+  EndMT.genes = c(retained.genes.EndMT$gene, rep(NA, max_length - length(retained.genes.EndMT$gene)))
+)
+
+
+dds.UCell <- counts(dds_merged_min, normalized=FALSE)
+gene.sets <- list(EC.markers.sig, EndMT.markers.sig)
+UCell.scores <- ScoreSignatures_UCell(dds.UCell, features = gene.sets)
+UCell.scores <- as.data.frame(UCell.scores)
+UCell.scores <- UCell.scores %>%
+  dplyr::rename(
+    EC.markers.sig.UCell = signature_1_UCell,
+    EndMT.markers.sig.UCell = signature_2_UCell
+  )
+
+UCell.scores <- UCell.scores %>%
+  mutate(Sample = rownames(UCell.scores)) %>%
+  dplyr::select(Sample, everything())
+
+group_lookup <- data.frame(Sample = rownames(metadata_table), Group = metadata_table$Group)
+UCell.scores <- merge(UCell.scores, group_lookup, by.x = "row.names", by.y = "Sample", all.x = TRUE)
+rownames(UCell.scores) <- UCell.scores$Row.names
+UCell.scores$Row.names <- NULL
+
+
+
+combined.results.KO <- data.frame(
+  gene = rownames(SRB_DESeq2_ERG.Ch_Ctrl.Ch),
+  log2FC.Ch = SRB_DESeq2_ERG.Ch_Ctrl.Ch$log2FoldChange,
+  padj.Ch = SRB_DESeq2_ERG.Ch_Ctrl.Ch$padj
+)
+
+filtered.results.KO <- combined.results.KO[combined.results.KO$padj.Ch < 0.05, ]
+
+retained.genes.EC.KO <- filtered.results.KO[filtered.results.KO$gene %in% EC.markers.human, ]
+EC.markers.sig.KO <- retained.genes.EC.KO$gene
+retained.genes.EndMT.KO <- filtered.results.KO[filtered.results.KO$gene %in% EndMT.markers.human, ]
+EndMT.markers.sig.KO <- retained.genes.EndMT.KO$gene
+
+max_length <- max(length(retained.genes.EC.KO$gene), length(retained.genes.EndMT.KO$gene))
+gene.df.KO <- data.frame(
+  EC.genes.KO = c(retained.genes.EC.KO$gene, rep(NA, max_length - length(retained.genes.EC.KO$gene))),
+  EndMT.genes.KO = c(retained.genes.EndMT.KO$gene, rep(NA, max_length - length(retained.genes.EndMT.KO$gene)))
+)
+
+samples_to_keep <- rownames(metadata_table.KO)
+dds.UCell.KO <- dds.UCell[, colnames(dds.UCell) %in% samples_to_keep]
+
+gene.sets.KO <- list(EC.markers.sig.KO, EndMT.markers.sig.KO)
+UCell.scores.KO <- ScoreSignatures_UCell(dds.UCell.KO, features = gene.sets.KO)
+UCell.scores.KO <- as.data.frame(UCell.scores.KO)
+UCell.scores.KO <- UCell.scores.KO %>%
+  dplyr::rename(
+    EC.markers.sig.UCell = signature_1_UCell,
+    EndMT.markers.sig.UCell = signature_2_UCell
+  )
+
+UCell.scores.KO <- UCell.scores.KO %>%
+  mutate(Sample = rownames(UCell.scores.KO)) %>%
+  dplyr::select(Sample, everything())
+
+group_lookup <- data.frame(Sample = rownames(metadata_table), Group = metadata_table$Group)
+UCell.scores.KO <- merge(UCell.scores.KO, group_lookup, by.x = "row.names", by.y = "Sample", all.x = TRUE)
+rownames(UCell.scores.KO) <- UCell.scores.KO$Row.names
+UCell.scores.KO$Row.names <- NULL
+```
+
+### DGE volcano plots
+
+```{r}
+### input file formatting
+contrast.24h <- contrast.24h %>%
+  mutate(diffexp.top = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+contrast.24h <- contrast.24h %>%
+  mutate(diffexp.EndMT.1 = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+contrast.24h <- contrast.24h %>%
+  mutate(diffexp.EndMT.2 = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+
+contrast.72h <- contrast.72h %>%
+  mutate(diffexp.top = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+contrast.72h <- contrast.72h %>%
+  mutate(diffexp.EndMT.1 = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+contrast.72h <- contrast.72h %>%
+  mutate(diffexp.EndMT.2 = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+
+contrast.Ch <- contrast.Ch %>%
+  mutate(diffexp.top = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+contrast.Ch <- contrast.Ch %>%
+  mutate(diffexp.EndMT.1 = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+contrast.Ch <- contrast.Ch %>%
+  mutate(diffexp.EndMT.2 = case_when(
+    padj < 0.05 & log2FoldChange > 0 ~ "up",
+    padj < 0.05 & log2FoldChange < 0 ~ "down",
+    TRUE ~ "no"
+  ))
+
+
+### contrast.24h_EndMT
+EC.markers.human1 <- c("ERG", "APLN", "FLT4", "CLDN5", "RASIP1", "PECAM1", "DLL4", "CYTL1")
+EndMT.markers.human1 <- c("PI16", "ZEB2", "COL8A1", "FN1", "HMGA2", "CDH2", "TGFB1", "SNAI1")
+contrast.24h$delabel.EndMT.2 <- NA
+for (value in EC.markers.human1) {
+  if (value %in% rownames(contrast.24h)) {
+    if (contrast.24h[value, "log2FoldChange"] < 0 &&
+        contrast.24h[value, "padj"] < 0.05) {
+      contrast.24h[value, "delabel.EndMT.2"] <- value
+    }
+  }
+}
+for (value in EndMT.markers.human1) {
+  if (value %in% rownames(contrast.24h)) {
+    if (contrast.24h[value, "log2FoldChange"] > 0 &&
+        contrast.24h[value, "padj"] < 0.05) {
+      contrast.24h[value, "delabel.EndMT.2"] <- value
+    }
+  }
+}
+gene.list <- contrast.24h$delabel.EndMT.2[contrast.24h$delabel.EndMT.2 != ""]
+genes_in_list <- rownames(contrast.24h) %in% gene.list
+contrast.24h$diffexp.EndMT.2[genes_in_list] <- "label"
+contrast.24h.EndMT1 <- ggplot(contrast.24h, aes(x = log2FoldChange, y = -log10(padj), label = delabel.EndMT.2, size = 15)) +
+    geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') + 
+   rasterize(geom_point(data = contrast.24h[contrast.24h$diffexp.EndMT.2 == "no", ], aes(color = "Not significant"), size = 0.5), dpi=200) +
+    rasterize(geom_point(data = contrast.24h[contrast.24h$diffexp.EndMT.2 == "down", ], aes(color = "Ctrl.24h"), size = 0.5), dpi=200) +
+    rasterize(geom_point(data = contrast.24h[contrast.24h$diffexp.EndMT.2 == "up", ], aes(color = "ERG.24h"), size = 0.5), dpi=200) +
+    geom_point(data = contrast.24h[contrast.24h$diffexp.EndMT.2 == "label", ], aes(color = "Label"), size = 1.5) +
+    scale_color_manual(values = c("#90bff9", "#ffa0a0", "goldenrod3", "grey")) +
+    labs(color = 'Enrichment',
+         x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p.adj"),
+         title = "ERG.24h vs. Ctrl.24h - EndMT transcripts") +
+    geom_label_repel(size = 5, max.overlaps = Inf, box.padding = 0.5) +
+    coord_cartesian(ylim = c(0, 270), xlim = c(-12, 12))
+contrast.24h.EndMT2 <- contrast.24h.EndMT1 + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title.x = element_text(size=20),
+        axis.title.y = element_text(size=20),
+        panel.border = element_rect(size=2, colour = "black"),
+        axis.ticks = element_line(size=1),
+        legend.position = "none")
+contrast.24h.EndMT2
+
+### contrast.72h_EndMT
+EC.markers.human1 <- c("ERG", "FLT4", "CLDN5", "PECAM1", "CYTL1", "VWF", "APLN", "DLL4")
+EndMT.markers.human1 <- c("PI16", "COL8A1", "FN1", "ACTA2", "TGFB1", "TWIST1", "HMGA2", "ZEB2")
+contrast.72h$delabel.EndMT.2 <- NA
+for (value in EC.markers.human1) {
+  if (value %in% rownames(contrast.72h)) {
+    if (contrast.72h[value, "log2FoldChange"] < 0 &&
+        contrast.72h[value, "padj"] < 0.05) {
+      contrast.72h[value, "delabel.EndMT.2"] <- value
+    }
+  }
+}
+for (value in EndMT.markers.human1) {
+  if (value %in% rownames(contrast.72h)) {
+    if (contrast.72h[value, "log2FoldChange"] > 0 &&
+        contrast.72h[value, "padj"] < 0.05) {
+      contrast.72h[value, "delabel.EndMT.2"] <- value
+    }
+  }
+}
+gene.list <- contrast.72h$delabel.EndMT.2[contrast.72h$delabel.EndMT.2 != ""]
+genes_in_list <- rownames(contrast.72h) %in% gene.list
+contrast.72h$diffexp.EndMT.2[genes_in_list] <- "label"
+contrast.72h.EndMT1 <- ggplot(contrast.72h, aes(x = log2FoldChange, y = -log10(padj), label = delabel.EndMT.2, size = 15)) +
+    geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') + 
+   rasterize(geom_point(data = contrast.72h[contrast.72h$diffexp.EndMT.2 == "no", ], aes(color = "Not significant"), size = 0.5), dpi=200) +
+    rasterize(geom_point(data = contrast.72h[contrast.72h$diffexp.EndMT.2 == "down", ], aes(color = "Ctrl.72h"), size = 0.5), dpi=200) +
+    rasterize(geom_point(data = contrast.72h[contrast.72h$diffexp.EndMT.2 == "up", ], aes(color = "ERG.72h"), size = 0.5), dpi=200) +
+    geom_point(data = contrast.72h[contrast.72h$diffexp.EndMT.2 == "label", ], aes(color = "Label"), size = 1.5) +
+    scale_color_manual(values = c("#00a6ff", "#ff2a00", "goldenrod3", "grey")) +
+    labs(color = 'Enrichment',
+         x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p.adj"),
+         title = "ERG.72h vs. Ctrl.72h - EndMT transcripts") +
+    geom_label_repel(size = 5, max.overlaps = Inf, box.padding = 0.5) +
+    coord_cartesian(ylim = c(0, 270), xlim = c(-12, 12))
+contrast.72h.EndMT2 <- contrast.72h.EndMT1 + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title.x = element_text(size=20),
+        axis.title.y = element_text(size=20),
+        panel.border = element_rect(size=2, colour = "black"),
+        axis.ticks = element_line(size=1),
+        legend.position = "none")
+contrast.72h.EndMT2
+
+### contrast.Ch_EndMT
+EC.markers.human1 <- c("ERG", "FLT4", "CLDN5", "APLN", "TIE1", "BMX", "RASIP1", "VWF")
+EndMT.markers.human1 <- c("PI16", "COL8A1", "FN1", "ACTA2", "ZEB2", "VCAN", "TGFB1", "FBLN5")
+contrast.Ch$delabel.EndMT.2 <- NA
+for (value in EC.markers.human1) {
+  if (value %in% rownames(contrast.Ch)) {
+    if (contrast.Ch[value, "log2FoldChange"] < 0 &&
+        contrast.Ch[value, "padj"] < 0.05) {
+      contrast.Ch[value, "delabel.EndMT.2"] <- value
+    }
+  }
+}
+for (value in EndMT.markers.human1) {
+  if (value %in% rownames(contrast.Ch)) {
+    if (contrast.Ch[value, "log2FoldChange"] > 0 &&
+        contrast.Ch[value, "padj"] < 0.05) {
+      contrast.Ch[value, "delabel.EndMT.2"] <- value
+    }
+  }
+}
+gene.list <- contrast.Ch$delabel.EndMT.2[contrast.Ch$delabel.EndMT.2 != ""]
+genes_in_list <- rownames(contrast.Ch) %in% gene.list
+contrast.Ch$diffexp.EndMT.2[genes_in_list] <- "label"
+contrast.Ch.EndMT1 <- ggplot(contrast.Ch, aes(x = log2FoldChange, y = -log10(padj), label = delabel.EndMT.2, size = 15)) +
+    geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') + 
+   rasterize(geom_point(data = contrast.Ch[contrast.Ch$diffexp.EndMT.2 == "no", ], aes(color = "Not significant"), size = 0.5), dpi=200) +
+    rasterize(geom_point(data = contrast.Ch[contrast.Ch$diffexp.EndMT.2 == "down", ], aes(color = "Ctrl.Ch"), size = 0.5), dpi=200) +
+    rasterize(geom_point(data = contrast.Ch[contrast.Ch$diffexp.EndMT.2 == "up", ], aes(color = "ERG.Ch"), size = 0.5), dpi=200) +
+    geom_point(data = contrast.Ch[contrast.Ch$diffexp.EndMT.2 == "label", ], aes(color = "Label"), size = 1.5) +
+    scale_color_manual(values = c("#347db7", "#e3191b", "goldenrod3", "grey")) +
+    labs(color = 'Enrichment',
+         x = expression("log"[2]*"FC"), y = expression("-log"[10]*"p.adj"),
+         title = "ERG.Ch vs. Ctrl.Ch - EndMT transcripts") +
+    geom_label_repel(size = 5, max.overlaps = Inf, box.padding = 0.5) +
+    coord_cartesian(ylim = c(0, 270), xlim = c(-12, 12))
+contrast.Ch.EndMT2 <- contrast.Ch.EndMT1 + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title.x = element_text(size=20),
+        axis.title.y = element_text(size=20),
+        panel.border = element_rect(size=2, colour = "black"),
+        axis.ticks = element_line(size=1),
+        legend.position = "none")
+contrast.Ch.EndMT2
+```
+ 
+### GESECA (pathway enrichment)
+
+```{r}
+es <- read.csv("/home/kellis/mnt/largeprojects/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/salmon_counts_matrix.csv", row.names = 1)
+x <- vroom::vroom("/home/kellis/Downloads/siRNA_KD_metadata(1).txt")
+set.seed(1234)
+x$Group
+colnames(es) <- x$Group
+es <- es[,c(1,5,9,13,3,7,11,15,2,6,10,14,4,8,12,16)]
+library(limma)
+
+es <- normalizeBetweenArrays(log2(es), method="quantile")
+
+es <- es[order(rowMeans(es), decreasing=TRUE), ]
+
+#es <- es[head(order(rowMeans(es), decreasing=TRUE), 12000), ]
+head(es)
+
+
+es <- es[rowSums(is.na(es)) == 0,]
+es <- es[rowSums(is.infinite(es)) == 0,]
+
+library(msigdbr)
+pathwaysDF <- msigdbr("human", category="H")
+pathways <- split(as.character(pathwaysDF$gene_symbol), pathwaysDF$gs_name)
+
+
+library(fgsea)
+set.seed(1)
+gesecaRes <- geseca(pathways, es, minSize = 15, maxSize = 500)
+
+plotCoregulationProfile(pathway=pathways[["HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION"]], 
+                        E=es, titles = colnames(es), conditions=cond, center = T)
+plotCoregulationProfile(pathway=pathways[["HALLMARK_INTERFERON_GAMMA_RESPONSE"]], 
+                        E=es, titles = colnames(es), conditions=cond)
+
+cond <- gsub("h.","h",colnames(es))
+
+
+plotGesecaTable(gesecaRes |> head(10), pathways, E=es, titles = colnames(es))
+```
+
+### ORA (pathway enrichment)
+
+```{r}
+### contrast.24h
+### ORA - GO - up+downregulated genes
+contrast.24h.sort <- contrast.24h
+contrast.24h.sort$rank <- sign(contrast.24h.sort$log2FoldChange) * -log10(contrast.24h.sort$padj)
+contrast.24h.sort <- contrast.24h.sort[order(-contrast.24h.sort$rank), ]
+contrast.24h.ora.GO.bothlist <- rownames(contrast.24h.sort[(contrast.24h.sort$log2FoldChange > 0.5 | contrast.24h.sort$log2FoldChange < -0.5) & contrast.24h.sort$padj < 0.05, ])
+contrast.24h.ora.GO.both <- enrichGO(contrast.24h.ora.GO.bothlist,
+                                    ont = "BP",
+                                    keyType = "SYMBOL",
+                                    OrgDb = "org.Hs.eg.db")
+contrast.24h.ora.GO.bothtable <- contrast.24h.ora.GO.both@result 
+
+### contrast.72h
+### ORA - GO - up+downregulated genes
+contrast.72h.sort <- contrast.72h
+contrast.72h.sort$rank <- sign(contrast.72h.sort$log2FoldChange) * -log10(contrast.72h.sort$padj)
+contrast.72h.sort <- contrast.72h.sort[order(-contrast.72h.sort$rank), ]
+contrast.72h.ora.GO.bothlist <- rownames(contrast.72h.sort[(contrast.72h.sort$log2FoldChange > 0.5 | contrast.72h.sort$log2FoldChange < -0.5) & contrast.72h.sort$padj < 0.05, ])
+contrast.72h.ora.GO.both <- enrichGO(contrast.72h.ora.GO.bothlist,
+                                    ont = "BP",
+                                    keyType = "SYMBOL",
+                                    OrgDb = "org.Hs.eg.db")
+contrast.72h.ora.GO.bothtable <- contrast.72h.ora.GO.both@result 
+
+### contrast.Ch
+### ORA - GO - up+downregulated genes
+contrast.Ch.sort <- contrast.Ch
+contrast.Ch.sort$rank <- sign(contrast.Ch.sort$log2FoldChange) * -log10(contrast.Ch.sort$padj)
+contrast.Ch.sort <- contrast.Ch.sort[order(-contrast.Ch.sort$rank), ]
+contrast.Ch.ora.GO.bothlist <- rownames(contrast.Ch.sort[(contrast.Ch.sort$log2FoldChange > 0.5 | contrast.Ch.sort$log2FoldChange < -0.5) & contrast.Ch.sort$padj < 0.05, ])
+contrast.Ch.ora.GO.both <- enrichGO(contrast.Ch.ora.GO.bothlist,
+                         ont = "BP",
+                         keyType = "SYMBOL",
+                         OrgDb = "org.Hs.eg.db")
+contrast.Ch.ora.GO.bothtable <- contrast.Ch.ora.GO.both@result
+```
+
+### Pathway radar plot
+
+```{r}
+## harmony.radar.pathway.GR.avg
+lists <- list(
+  endothelial = endothelial.list,
+  mesenchymal = mesenchymal.list,
+  adhesion = adhesion.list,
+  migration = migration.list,
+  immune = immune.list,
+  inflammation = inflammation.list,
+  lipid = lipid.list,
+  proliferation = proliferation.list,
+  angiogenesis = angiogenesis.list
+)
+
+# Initialize a vector to store the average counts for each pathway
+pathway_avg_24h <- numeric(length(lists))
+names(pathway_avg_24h) <- names(lists)
+
+pathway_avg_72h <- numeric(length(lists))
+names(pathway_avg_72h) <- names(lists)
+
+pathway_avg_Ch <- numeric(length(lists))
+names(pathway_avg_Ch) <- names(lists)
+
+# Calculate the average "Count" for 24h
+filtered_df <- contrast.24h.ora.GO.bothtable[contrast.24h.ora.GO.bothtable$qvalue < 0.05, ]
+for (list_name in names(lists)) {
+  terms <- lists[[list_name]]
+  pattern <- paste(terms, collapse = "|")
+  matched_rows <- grepl(pattern, filtered_df$Description, ignore.case = TRUE)
+  
+  # Calculate the average of the "Count" column for matching rows
+  pathway_avg_24h[list_name] <- mean(filtered_df$Count[matched_rows], na.rm = TRUE)
+}
+
+# Calculate the average "Count" for 72h
+filtered_df <- contrast.72h.ora.GO.bothtable[contrast.72h.ora.GO.bothtable$qvalue < 0.05, ]
+for (list_name in names(lists)) {
+  terms <- lists[[list_name]]
+  pattern <- paste(terms, collapse = "|")
+  matched_rows <- grepl(pattern, filtered_df$Description, ignore.case = TRUE)
+  
+  # Calculate the average of the "Count" column for matching rows
+  pathway_avg_72h[list_name] <- mean(filtered_df$Count[matched_rows], na.rm = TRUE)
+}
+
+# Calculate the average "Count" for Ch
+filtered_df <- contrast.Ch.ora.GO.bothtable[contrast.Ch.ora.GO.bothtable$qvalue < 0.05, ]
+for (list_name in names(lists)) {
+  terms <- lists[[list_name]]
+  pattern <- paste(terms, collapse = "|")
+  matched_rows <- grepl(pattern, filtered_df$Description, ignore.case = TRUE)
+  
+  # Calculate the average of the "Count" column for matching rows
+  pathway_avg_Ch[list_name] <- mean(filtered_df$Count[matched_rows], na.rm = TRUE)
+}
+
+# Create the final dataframe to store the average counts
+harmony.radar.pathway.GR.avg <- data.frame(
+  pathway.24h = pathway_avg_24h,
+  pathway.72h = pathway_avg_72h,
+  pathway.Ch = pathway_avg_Ch
+)
+harmony.radar.pathway.GR.avg <- t(harmony.radar.pathway.GR.avg)
+harmony.radar.pathway.GR.avg <- as.data.frame(harmony.radar.pathway.GR.avg)
+
+harmony.radar.pathway.GR.avg <- harmony.radar.pathway.GR.avg[, c("endothelial", "mesenchymal", "adhesion", "migration", "proliferation", "angiogenesis", "immune", "inflammation", "lipid")]
+harmony.radar.pathway.GR.avg$group <- rownames(harmony.radar.pathway.GR.avg)
+harmony.radar.pathway.GR.avg <- harmony.radar.pathway.GR.avg[, c("group", setdiff(names(harmony.radar.pathway.GR.avg), "group"))]
+rownames(harmony.radar.pathway.GR.avg) <- NULL
+new_colnames <- c(names(harmony.radar.pathway.GR.avg)[1], LETTERS[1:9])
+colnames(harmony.radar.pathway.GR.avg) <- new_colnames
+
+harmony.radar.pathway.GR.avg.filter <- harmony.radar.pathway.GR.avg %>% filter(group %in% c("pathway.24h", "pathway.72h", "pathway.Ch"))
+radar2 <- ggradar(harmony.radar.pathway.GR.avg.filter, base.size = 10, grid.label.size = 0, gridline.mid.colour = "grey60", group.point.size = 3, group.line.width = 1.25, fill = TRUE, fill.alpha = 0.15, group.colours = c("#347db7", "#008000", "#e3191b")) +
+  ggtitle("Average gene ratio") +
+  theme(plot.title = element_text(size = 14, hjust = 0.5), legend.position = "none")
+radar2
+```
+
+### Enrichr DisGeNET pathway analysis
+
+```{r}
+### enrichR DisGeNET
+DGN.24h.all.genes <- rownames(contrast.24h[contrast.24h$padj < 0.05 & contrast.24h$log2FoldChange < -0.5 | contrast.24h$log2FoldChange > 0.5, ])
+DGN.72h.all.genes <- rownames(contrast.72h[contrast.72h$padj < 0.05 & contrast.72h$log2FoldChange < -0.5 | contrast.72h$log2FoldChange > 0.5, ])
+DGN.KO.all.genes <- rownames(contrast.Ch[contrast.Ch$padj < 0.05 & contrast.Ch$log2FoldChange < -0.5 | contrast.Ch$log2FoldChange > 0.5, ])
+
+DGN.24h.all.out <- enrichr(DGN.24h.all.genes, "DisGeNET")
+DGN.72h.all.out <- enrichr(DGN.72h.all.genes, "DisGeNET")
+DGN.KO.all.out <- enrichr(DGN.KO.all.genes, "DisGeNET")
+
+DGN.24h.all <- as.data.frame(DGN.24h.all.out)
+DGN.72h.all <- as.data.frame(DGN.72h.all.out)
+DGN.KO.all <- as.data.frame(DGN.KO.all.out)
+
+# Define the function to process overlap
+process_overlap <- function(df) {
+  # Ensure Overlap is a character column, then calculate Overlap.ratio
+  df <- df %>%
+    mutate(
+      DisGeNET.Overlap = as.character(DisGeNET.Overlap),  # Ensure Overlap is a character vector
+      Overlap.ratio = {
+        # Extract the numbers before and after the '/' in Overlap
+        target_genes <- as.numeric(sub("/.*", "", DisGeNET.Overlap))  # Get the part before '/'
+        total_genes <- as.numeric(sub(".*/", "", DisGeNET.Overlap))    # Get the part after '/'
+        # Compute the ratio
+        target_genes / total_genes
+      }
+    )
+  return(df)  # Return the modified data frame
+}
+
+# List of data frames to process
+df_list <- list(DGN.24h.all, DGN.72h.all, DGN.KO.all)
+
+# Apply the process_overlap function to each data frame in the list
+df_list <- lapply(df_list, process_overlap)
+
+# Function to sort and add Rank
+process_df <- function(df) {
+  df %>%
+    arrange(DisGeNET.P.value) %>%                # Sort dataframe by P.value in ascending order
+    mutate(Rank = row_number() / n())    # Add Rank column (row number divided by total rows)
+}
+# Apply the function to each dataframe in df_list
+df_list <- lapply(df_list, process_df)
+
+# Assign the modified data frames back to their original variable names
+DGN.24h.all <- df_list[[1]]
+DGN.72h.all <- df_list[[2]]
+DGN.KO.all <- df_list[[3]]
+
+# List of data frames to process
+df_all_list <- list(DGN.24h.all, DGN.72h.all, DGN.KO.all)
+# Create an empty list to store the ranks from all dataframes
+rank_list <- list()
+# List of dataframe names for labeling
+df_all_names <- c("DGN.24h.all", "DGN.72h.all", "DGN.KO.all")
+# Loop through each dataframe in df_list and extract Rank along with Rowname, Adjusted.P.value, and Overlap.ratio
+for (i in 1:length(df_all_list)) {
+  df <- df_all_list[[i]]
+  # Extract Rank, Adjusted.P.value, and Overlap.ratio columns, along with Rowname
+  rank_list[[i]] <- data.frame(
+    Rowname = df$DisGeNET.Term,
+    Rank = df$Rank, 
+    Adjusted.P.value = df$DisGeNET.Adjusted.P.value,   # Include Adjusted.P.value column
+    Overlap.ratio = df$Overlap.ratio,         # Include Overlap.ratio column
+    stringsAsFactors = FALSE
+  )
+  # Rename the 'Rank' column to include the dataframe name for clarity
+  colnames(rank_list[[i]]) <- c(
+    "Rowname", 
+    paste0(df_all_names[i], "_Rank"), 
+    paste0(df_all_names[i], "_P.adj"),  # Adjusted.P.value column renamed
+    paste0(df_all_names[i], "_OR")      # Overlap.ratio column renamed
+  )
+}
+# Merge all the dataframes in rank_list into one, using Rowname as the key
+rank_df_all <- Reduce(function(x, y) merge(x, y, by = "Rowname", all = TRUE), rank_list)
+# Set the row names of the final dataframe to be the unique rownames
+rownames(rank_df_all) <- rank_df_all$Rowname
+# Drop the Rowname column from the dataframe
+rank_df_all <- rank_df_all[, -1]
+# Create the "Avg.rank" column by calculating the row means across all rank columns
+rank_columns <- grep("_Rank$", colnames(rank_df_all), value = TRUE)  # Get all rank column names
+# Calculate the average across the rank columns
+rank_df_all$Avg.rank <- rowMeans(rank_df_all[, rank_columns], na.rm = TRUE)
+# Sort the dataframe by Avg.rank in increasing order
+rank_df_all <- rank_df_all %>% arrange(DGN.KO.all_P.adj)
+rank_df_all <- rank_df_all %>% filter(DGN.24h.all_P.adj < 0.05 | DGN.72h.all_P.adj < 0.05 | DGN.KO.all_P.adj < 0.05)
+
+
+## DGN.top.all
+# Step 1: Reshape the data into long format
+long_df <- rank_df_all %>%
+  rownames_to_column(var = "Pathway") %>%
+  pivot_longer(cols = starts_with("DGN"),
+               names_to = c("Timepoint", "Type"),
+               names_pattern = "DGN\\.(24h|72h|KO)\\.all_(.*)",  # Capture 24h, 72h, or KO as Timepoint
+               values_to = "Value") %>%
+  pivot_wider(names_from = Type, values_from = Value) %>%
+  filter(Pathway %in% head(rownames(rank_df_all), 15))  # Filtering the first 15 pathways from row names
+
+long_df$Timepoint <- factor(long_df$Timepoint, levels = c("24h", "72h", "KO"))
+
+# Step 2: Calculate -log(P.adj)
+long_df$NegLogP.adj <- -log10(long_df$P.adj)
+# Filter the data for Timepoint "KO"
+KO_data <- subset(long_df, Timepoint == "KO")
+# Calculate the order of Pathway based on P.adj (ascending or descending, as needed)
+pathway_order <- names(sort(tapply(KO_data$P.adj, KO_data$Pathway, mean), decreasing = TRUE))  # Use decreasing = TRUE for ascending order
+# Apply the new order to the Pathway factor in the full dataset
+long_df$Pathway <- factor(long_df$Pathway, levels = pathway_order)
+
+# Step 3: Create the ggplot
+p3 <- ggplot(long_df, aes(x = Timepoint, y = Pathway, color = NegLogP.adj, size = OR)) +
+  geom_point() +
+  scale_color_gradient(low = "grey85", high = "#800080") +
+  scale_size_continuous(range = c(2, 10)) +
+  labs(title = "All transcripts - Top pathways",
+       color = "-log(P.adj)",
+       size = "Overlap") +
+  force_panelsizes(rows = unit(6, "in"), cols = unit(1.5, "in")) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        plot.title = element_text(size=16),
+        legend.title = element_text(size=16),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())
+print(p3)
+
+
+## DGN.CVD.all
+pathway_order <- c("Atherosclerosis", "Arteriosclerosis", "Vascular Diseases", "Cerebrovascular accident", "Coronary Artery Disease", "Cardiovascular Diseases", "Coronary Arteriosclerosis", "Myocardial Infarction", "Aortic Aneurysm, Abdominal", "Aortic Valve Insufficiency", "Coronary heart disease", "Myocardial Ischemia", "Intracranial Aneurysm", "Aneurysm", "Heart failure")
+
+# Step 1: Reshape the data into long format
+long_df <- rank_df_all %>%
+  rownames_to_column(var = "Pathway") %>%
+  pivot_longer(cols = starts_with("DGN"),
+               names_to = c("Timepoint", "Type"),
+               names_pattern = "DGN\\.(24h|72h|KO)\\.all_(.*)",  # Capture 24h, 72h, or KO as Timepoint
+               values_to = "Value") %>%
+  pivot_wider(names_from = Type, values_from = Value) %>%
+  filter(Pathway %in% pathway_order)  # Filtering the first 15 pathways from row names
+
+long_df$Timepoint <- factor(long_df$Timepoint, levels = c("24h", "72h", "KO"))
+
+# Step 2: Calculate -log(P.adj)
+long_df$NegLogP.adj <- -log10(long_df$P.adj)
+# Filter the data for Timepoint "KO"
+KO_data <- subset(long_df, Timepoint == "KO")
+# Calculate the order of Pathway based on P.adj (ascending or descending, as needed)
+pathway_order <- names(sort(tapply(KO_data$P.adj, KO_data$Pathway, mean), decreasing = TRUE))  # Use decreasing = TRUE for ascending order
+# Apply the new order to the Pathway factor in the full dataset
+long_df$Pathway <- factor(long_df$Pathway, levels = pathway_order)
+
+# Step 3: Create the ggplot
+p6 <- ggplot(long_df, aes(x = Timepoint, y = Pathway, color = NegLogP.adj, size = OR)) +
+  geom_point() +
+  scale_color_gradient(low = "grey85", high = "#e3191b") +
+  scale_size_continuous(range = c(2, 10)) +
+  labs(title = "All transcripts - CVD pathways",
+       color = "-log(P.adj)",
+       size = "Overlap") +
+  force_panelsizes(rows = unit(6, "in"), cols = unit(1.5, "in")) +
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        plot.title = element_text(size=16),
+        legend.title = element_text(size=16),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())
+print(p6)
+```
+
+### GWAS correlation plots
+
+```{r}
+### GWAS correlation plots
+GWAS.cat.cancer <- read.delim("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/Clint Miller collab/GWAS Catalog/gwas-association-downloaded_2025-02-25-MONDO_0004992-withChildTraits.cancer.tsv", header = TRUE)
+GWAS.cat.cancer.genes <- GWAS.cat.cancer[!is.na(GWAS.cat.cancer$MAPPED_GENE) & GWAS.cat.cancer$MAPPED_GENE != "", c("MAPPED_GENE", "P.VALUE")]
+GWAS.cat.CVD <- read.delim("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/Clint Miller collab/GWAS Catalog/gwas-association-downloaded_2025-02-25-EFO_0000319-withChildTraits.CVD.tsv", header = TRUE)
+GWAS.cat.CVD.genes <- GWAS.cat.CVD[!is.na(GWAS.cat.CVD$MAPPED_GENE) & GWAS.cat.CVD$MAPPED_GENE != "", c("MAPPED_GENE", "P.VALUE")]
+GWAS.cat.CAD <- read.delim("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/Clint Miller collab/GWAS Catalog/gwas-association-downloaded_2025-02-25-EFO_0001645-withChildTraits.CAD.tsv", header = TRUE)
+GWAS.cat.CAD.genes <- GWAS.cat.CAD[!is.na(GWAS.cat.CAD$MAPPED_GENE) & GWAS.cat.CAD$MAPPED_GENE != "", c("MAPPED_GENE", "P.VALUE")]
+GWAS.cat.aorticaneurysm <- read.delim("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/Clint Miller collab/GWAS Catalog/gwas-association-downloaded_2025-02-25-EFO_0001666-withChildTraits.aorticaneurysm.tsv", header = TRUE)
+GWAS.cat.aorticaneurysm.genes <- GWAS.cat.aorticaneurysm[!is.na(GWAS.cat.aorticaneurysm$MAPPED_GENE) & GWAS.cat.aorticaneurysm$MAPPED_GENE != "", c("MAPPED_GENE", "P.VALUE")]
+
+telohaec.Ch.KOvsCtrl.markers.GWAS <- contrast.Ch
+telohaec.Ch.KOvsCtrl.markers.GWAS$rank <- sign(telohaec.Ch.KOvsCtrl.markers.GWAS$log2FoldChange) * -log10(telohaec.Ch.KOvsCtrl.markers.GWAS$pvalue)
+telohaec.Ch.KOvsCtrl.markers.GWAS <- telohaec.Ch.KOvsCtrl.markers.GWAS[order(-telohaec.Ch.KOvsCtrl.markers.GWAS$rank), ]
+telohaec.Ch.KOvsCtrl.markers.GWAS$rank[telohaec.Ch.KOvsCtrl.markers.GWAS$rank > 300] <- 300
+telohaec.Ch.KOvsCtrl.markers.GWAS$rank[telohaec.Ch.KOvsCtrl.markers.GWAS$rank < -300] <- -300
+
+# Function to split a single gene string based on delimiters surrounded by whitespaces (comma followed by space, hyphen, or x)
+split_genes <- function(gene_string) {
+  # Split by ", ", "- ", or " x " only when flanked by whitespaces (using a regular expression)
+  split_genes <- unlist(str_split(gene_string, "[;,](?=\\s)|(?<=\\s)[\\-x](?=\\s)"))
+  # Trim any leading/trailing whitespace from the resulting split parts
+  split_genes <- trimws(split_genes)
+  return(split_genes)
+}
+
+# List of dataset names and corresponding terms to replace in the code
+dataset_list <- c("cancer", "CVD", "CAD", "aorticaneurysm")
+# Loop over each dataset
+for (dataset in dataset_list) {
+  # Construct the data frame and column names dynamically
+  GWAS.cat <- get(paste0("GWAS.cat.", dataset, ".genes"))
+  GWAS.cat.min <- paste0("GWAS.cat.", dataset, ".genes.min")
+  # Create new dataframe for split rows if necessary
+  split_rows <- data.frame(MAPPED_GENE = character(), P.VALUE = numeric())
+  # Loop through the rows in the dataframe
+  for (i in 1:nrow(GWAS.cat)) {
+    if (grepl("[;,](?=\\s)|(?<=\\s)[\\-x](?=\\s)", GWAS.cat$MAPPED_GENE[i], perl = TRUE)) {
+      split_genes_parts <- split_genes(GWAS.cat$MAPPED_GENE[i])
+      new_rows <- data.frame(MAPPED_GENE = split_genes_parts, P.VALUE = rep(GWAS.cat$P.VALUE[i], length(split_genes_parts)))
+      split_rows <- rbind(split_rows, new_rows)
+    } else {
+      split_rows <- rbind(split_rows, GWAS.cat[i, ])
+    }
+  }
+  # Create a new dataframe with split rows
+  GWAS.cat <- split_rows
+  
+  # Filter by the minimum P.VALUE for each MAPPED_GENE
+  GWAS.cat.min <- GWAS.cat %>%
+    group_by(MAPPED_GENE) %>%
+    filter(P.VALUE == min(P.VALUE)) %>%
+    slice(1) %>%
+    ungroup()
+  
+  # Match P.VALUE from GWAS.cat.min to the harmony dataframe
+  telohaec.Ch.KOvsCtrl.markers.GWAS <- telohaec.Ch.KOvsCtrl.markers.GWAS %>%
+    mutate(!!paste0("GWAS.", dataset, ".min.p") := GWAS.cat.min$P.VALUE[match(rownames(telohaec.Ch.KOvsCtrl.markers.GWAS), GWAS.cat.min$MAPPED_GENE)])
+  # Compute negative log of the p-values
+  telohaec.Ch.KOvsCtrl.markers.GWAS <- telohaec.Ch.KOvsCtrl.markers.GWAS %>%
+    mutate(!!paste0("GWAS.", dataset, ".min.neglogp") := -log10(!!sym(paste0("GWAS.", dataset, ".min.p"))))
+  # Limit extreme values for the negative log p-values
+  telohaec.Ch.KOvsCtrl.markers.GWAS[[paste0("GWAS.", dataset, ".min.neglogp")]][telohaec.Ch.KOvsCtrl.markers.GWAS[[paste0("GWAS.", dataset, ".min.neglogp")]] > 200] <- 200
+  # Assign colors based on rank for min GWAS p-value
+  telohaec.Ch.KOvsCtrl.markers.GWAS <- telohaec.Ch.KOvsCtrl.markers.GWAS %>%
+         mutate(!!paste0("GWAS.", dataset, ".min.color") := case_when(
+             !is.na(!!sym(paste0("GWAS.", dataset, ".min.neglogp"))) & rank %in% head(rank[!is.na(!!sym(paste0("GWAS.", dataset, ".min.neglogp")))], 8) ~ "firebrick3",    # Top 8 ranks with non-NA values get red
+             !is.na(!!sym(paste0("GWAS.", dataset, ".min.neglogp"))) & rank %in% tail(rank[!is.na(!!sym(paste0("GWAS.", dataset, ".min.neglogp")))], 8) ~ "deepskyblue3",  # Bottom 8 ranks with non-NA values get blue
+             TRUE ~ "black"  # Otherwise, black
+         ))
+
+  # Generate the plot for the min GWAS p-values
+  GWAS.min.corr <- ggplot(data = telohaec.Ch.KOvsCtrl.markers.GWAS, aes(x = !!sym(paste0("GWAS.", dataset, ".min.neglogp")), y = rank)) +
+    geom_hline(yintercept = 0, col = "black") +
+    geom_point(aes(color = !!sym(paste0("GWAS.", dataset, ".min.color"))), size = 2) +
+    geom_label_repel(aes(label = ifelse(!!sym(paste0("GWAS.", dataset, ".min.color")) %in% c("firebrick3", "deepskyblue3"), as.character(rownames(telohaec.Ch.KOvsCtrl.markers.GWAS)), "")), max.overlaps = Inf, size = 6) +
+    coord_cartesian(xlim = c(0,NA), ylim = c(-300,300)) +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_color_manual(values = c("black", "deepskyblue3", "firebrick3")) +
+    labs(x = expression(paste("GWAS SNP: -log"[10] * "(P.value)")), y = "ERG KO enrichment score", title = paste0("GWAS.", dataset, ".min.corr")) +
+    NoLegend() +
+    force_panelsizes(rows = unit(3.5, "in"), cols = unit(3.5, "in"))
+  # Apply the theme
+  GWAS.min.corr <- GWAS.min.corr + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+                                         axis.text = element_text(size=20),
+                                         axis.title.x = element_text(face = "plain", size=20),
+                                         axis.title.y = element_text(face = "plain", size=20),
+                                         panel.border = element_rect(size=2, colour = "black"),
+                                         axis.ticks = element_line(size=1),
+                                         panel.grid.major = element_blank(),
+                                         panel.grid.minor = element_blank())
+  # Assign plot to a variable dynamically (e.g., GWAS.cancer.min.corr)
+  assign(paste0("GWAS.", dataset, ".min.corr"), GWAS.min.corr)
+}
+
+plot_grid(GWAS.cancer.min.corr, GWAS.CVD.min.corr, GWAS.CAD.min.corr, GWAS.aorticaneurysm.min.corr, nrow = 1)
+```
+
+### Human carotid scRNA-seq
+
+```{r}
+### Set up scRNA-seq data
+meta.table.alsaigh <-read.table("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Clint Miller collab/carotid scRNA-seq/meta.data.txt", sep="\t", header = TRUE)
+meta.table.alsaigh
+# List directories containing filtered matrix files with full paths
+alldirs.alsaigh <- list.dirs("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Clint Miller collab/carotid scRNA-seq/matrices", recursive = TRUE, full.names = TRUE)
+# List dirs containing 'filtered' in the name
+alldata.alsaigh <- alldirs.alsaigh[grepl("filtered", alldirs.alsaigh)]
+# Create an empty list for All samples
+All_Samples.alsaigh <- vector(mode="list", length=length(alldata.alsaigh))
+# Create a list for sample IDs: these will later become Project names and origin identities in Seurat objects
+alldata_names.alsaigh<-vector(mode="list", length=1)
+# Load the data
+for (i in 1:length(alldata.alsaigh)) {
+  print(paste("Reading data from", alldata.alsaigh[i]))  # Print the current directory being processed
+  All_Samples.alsaigh[[i]] <- Read10X(data.dir = alldata.alsaigh[i])  # Read data from directory
+  Sampleinfo <- strsplit(alldata.alsaigh[i], "/")
+  Sample_ID <- Sampleinfo[[1]][length(Sampleinfo[[1]]) - 1]  # Extract second last part of the path
+  # Calculate MT gene content for each cell
+  MT.index <- grep(pattern = "^Mt-", x = rownames(All_Samples.alsaigh[[i]]), ignore.case = TRUE)
+  percent.MT <- Matrix::colSums(All_Samples.alsaigh[[i]][MT.index, ]) / Matrix::colSums(All_Samples.alsaigh[[i]]) * 100
+  # Create metadata table with percent.MT
+  meta <- data.frame(percent.MT, Sample_ID)
+  meta$barcode <- rownames(meta)
+  meta <- merge(meta, meta.table.alsaigh, by.y = "Sample_ID")
+  rownames(meta) <- meta$barcode
+  meta[,"barcode"] <- NULL
+  # Store sample ID in list
+  alldata_names.alsaigh[[1]][i] <- Sample_ID
+  # Create Seurat object for each sample and attach metadata
+  All_Samples.alsaigh[i] <- CreateSeuratObject(counts = All_Samples.alsaigh[[i]], project = alldata_names.alsaigh[[1]][i], min.cells = 3, min.features = 200, meta.data = meta)
+}
+# Merge Seurat objects
+alldata_names2.alsaigh <- alldata_names.alsaigh[[1]]
+alsaigh <- merge(All_Samples.alsaigh[[1]], y = All_Samples.alsaigh[2:length(All_Samples.alsaigh)], merge.data = TRUE, add.cell.ids = alldata_names2.alsaigh, project = "Alsaigh human carotid scRNA-seq")
+table(Idents(alsaigh))
+
+p1<-VlnPlot(alsaigh, features = "nFeature_RNA", group.by="orig.ident", pt.size=0.01)
+p2<-VlnPlot(alsaigh, features = "percent.MT", group.by="orig.ident", pt.size=0.01)
+p3<-VlnPlot(alsaigh, features = "nCount_RNA", group.by="orig.ident", pt.size=0.01)
+plot_grid(p1,p2,p3, nrow = 1)
+table(Idents(alsaigh))
+
+alsaigh <- subset(alsaigh, subset = percent.MT<10 & nFeature_RNA<4000 & nCount_RNA>500)
+#Let's see how many cells remain for each sample
+table(Idents(alsaigh))
+alsaigh_all_table_QC_1 <- table(Idents(alsaigh))
+
+# Downsample seurat object based on smallest sample
+sample_counts <- table(alsaigh$Sample_ID)
+min_cells_per_sample <- min(sample_counts)
+# Randomly select the minimum number of cells for each sample ID
+set.seed(123)  # Set seed for reproducibility
+cells_to_keep <- unlist(lapply(names(sample_counts), function(sample_id) {
+  # Get the cells associated with the current Sample_ID
+  sample_cells <- which(alsaigh$Sample_ID == sample_id)
+  # Randomly select 'min_cells_per_sample' cells for this Sample_ID
+  sampled_cells <- sample(sample_cells, min_cells_per_sample, replace = FALSE)
+  return(sampled_cells)
+}))
+# Subset the Seurat object
+alsaigh.down <- subset(alsaigh, cells = cells_to_keep)
+
+alsaigh.down <- NormalizeData(alsaigh.down, normalization.method = "LogNormalize", scale.factor = 100000)
+alsaigh.down <- FindVariableFeatures(alsaigh.down, selection.method = "vst", nfeatures=2000)
+all.genes <- rownames(alsaigh.down)
+alsaigh.down <- ScaleData(alsaigh.down, features = all.genes)
+alsaigh.down <- RunPCA(alsaigh.down, features = VariableFeatures(object = alsaigh.down))
+
+p4<-VlnPlot(alsaigh.down, features = "nFeature_RNA", group.by="orig.ident", pt.size=0.01)
+p5<-VlnPlot(alsaigh.down, features = "percent.MT", group.by="orig.ident", pt.size=0.01)
+p6<-VlnPlot(alsaigh.down, features = "nCount_RNA", group.by="orig.ident", pt.size=0.01)
+plot_grid(p4,p5,p6, nrow = 1)
+
+ElbowPlot(alsaigh.down)
+
+alsaigh.telo <- FindNeighbors(alsaigh.down, reduction = "pca", dims = 1:15)
+alsaigh.telo <- FindClusters(alsaigh.telo, resolution = 0.4)
+alsaigh.telo <- RunUMAP(alsaigh.telo, reduction = "pca", dims = 1:15) 
+table(Idents(alsaigh.telo))
+Harmony_all_table_QC_2 <- table(Idents(alsaigh.telo))
+alsaigh.telo[["Clusters_uncorrected"]] <- Idents(object = alsaigh.telo)
+
+DimPlot(alsaigh.telo, reduction = "umap", pt.size = 0.1, label=TRUE) +NoLegend()
+
+alsaigh.telo.join <- JoinLayers(alsaigh.telo)
+alsaigh.telo.join.markers <- FindAllMarkers(alsaigh.telo.join, only.pos = TRUE)
+
+# Unintegrated UMAP
+new.cluster.ids <- c("EC 1", "T cell 1", "T cell 2", "SMC 1", "Macrophage 1", "Fibroblast", "Macrophage 2", "NK cell", "Macrophage 3", "SMC 2", "SMC 3", "B cell 1", "EC 2", "B cell 2", "Neutrophil", "Mast cell", "Prolif. cell")
+names(new.cluster.ids) <- levels(alsaigh.telo)
+alsaigh.telo <- RenameIdents(alsaigh.telo, new.cluster.ids)
+dimplot <- DimPlot(alsaigh.telo, reduction = "umap", label = TRUE, label.size = 6, pt.size = 4, repel = TRUE, raster = TRUE, raster.dpi = c(2000,2000)) + NoLegend() + force_panelsizes(rows = unit(5.24, "in"), cols = unit(5.24, "in")) +
+ggtitle("Unintegrated UMAP") +
+theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title = element_text(size=20),
+        axis.line = element_blank(),
+        axis.ticks = element_line(size=1),
+        panel.border = element_rect(size=2, colour = "black"))
+dimplot
+
+table(Idents(alsaigh.telo))
+Harmony_all_table_QC_3 <- table(Idents(alsaigh.telo))
+alsaigh.telo[["Clusters_uncorrected"]] <- Idents(object = alsaigh.telo)
+
+# Unintegrated markers
+alsaigh.telo.join <- JoinLayers(alsaigh.telo)
+alsaigh.telo.join.markers <- FindAllMarkers(alsaigh.telo.join, only.pos = TRUE)
+
+# Per cluster QC stats
+# Get cluster names from active.ident
+alsaigh.telo.cluster_names <- alsaigh.telo@active.ident
+# Calculate cells per cluster
+alsaigh.telo.cell_counts <- table(alsaigh.telo.cluster_names)
+# Calculate median nFeature_RNA per cluster
+alsaigh.telo.median_nfeature_rna_per_cluster <- aggregate(nFeature_RNA ~ alsaigh.telo.cluster_names, data = alsaigh.telo@meta.data, FUN = median)
+# Calculate median nCount_RNA per cluster
+alsaigh.telo.median_ncount_rna_per_cluster <- aggregate(nCount_RNA ~ alsaigh.telo.cluster_names, data = alsaigh.telo@meta.data, FUN = median)
+# Calculate median percent.mt per cluster
+alsaigh.telo.median_percent_MT_per_cluster <- aggregate(percent.MT ~ alsaigh.telo.cluster_names, data = alsaigh.telo@meta.data, FUN = median)
+# Merge all information into a single dataframe
+result_table <- data.frame(
+    Cells_Per_Cluster = as.numeric(alsaigh.telo.cell_counts),
+    Median_nFeature_RNA = alsaigh.telo.median_nfeature_rna_per_cluster$nFeature_RNA,
+    Median_nCount_RNA = alsaigh.telo.median_ncount_rna_per_cluster$nCount_RNA,
+    Median_Percent_MT = alsaigh.telo.median_percent_MT_per_cluster$percent.MT,
+    row.names = alsaigh.telo.median_nfeature_rna_per_cluster$alsaigh.telo.cluster_names
+)
+# Print the result
+print(result_table)
+
+# Cells in each cluster per sample
+Harmony_all_table_QC_5 <- table(Idents(alsaigh.telo), alsaigh.telo$orig.ident)
+Harmony_all_table_QC_5
+
+# Unintegrated dotplot
+dotplot1 <- DotPlot(alsaigh.telo, features =c("ERG", "PECAM1", "VWF", "CD3D", "CD3E", "ACTA2", "TAGLN", "CD68", "CD163", "DCN", "PDGFRA", "KLRB1", "KLRC1", "CD27", "CD79A", "S100A8", "S100A9", "CPA3", "TPSAB1", "MKI67", "TOP2A")) + RotatedAxis()
+dotplot2 <- dotplot1 + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=16),
+        axis.title = element_blank(),
+        axis.line = element_line(size=1),
+        axis.ticks = element_line(size=1),
+        legend.title = element_text(size=20),
+        legend.text = element_text(size=16)) +
+        scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdBu"))) +
+        scale_size(range = c(0.001, 7)) +
+  ggtitle("Cell identity markers")
+dotplot2
+
+# Subset for ECs
+alsaigh.telo.EC <- subset(alsaigh.telo, idents = c("T cell 1", "T cell 2", "SMC 1", "Macrophage 1", "Fibroblast", "Macrophage 2", "NK cell", "Macrophage 3", "SMC 2", "SMC 3", "B cell 1", "B cell 2", "Neutrophil", "Mast cell", "Prolif. cell"), invert = TRUE)
+ElbowPlot(alsaigh.telo.EC)
+
+alsaigh.telo.EC <- FindNeighbors(alsaigh.telo.EC, dims = 1:15)
+alsaigh.telo.EC <- FindClusters(alsaigh.telo.EC, resolution = 0.1)
+alsaigh.telo.EC <- RunUMAP(alsaigh.telo.EC, dims = 1:15)
+new.cluster.ids3 <- c("EC 1'", "EC 2'", "EC 3'")
+names(new.cluster.ids3) <- levels(alsaigh.telo.EC)
+alsaigh.telo.EC <- RenameIdents(alsaigh.telo.EC, new.cluster.ids3)
+
+# UMAPs for EC subset
+dimplot1 <- DimPlot(alsaigh.telo.EC, reduction = "umap", label = TRUE, label.size = 6, pt.size = 8, repel = TRUE, raster = TRUE, raster.dpi = c(1500,1500)) + NoLegend() + ggtitle("Human carotid atherosclerosis") + scale_color_manual(values = c("deepskyblue3", "#DAB1DA", "firebrick3")) + force_panelsizes(rows = unit(5.24, "in"), cols = unit(5.24, "in")) + scale_x_reverse() +
+theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title = element_text(size=20),
+        axis.line = element_blank(),
+        axis.ticks = element_line(size=1),
+        panel.border = element_rect(size=2, colour = "black"))
+dimplot1
+
+dimplot2 <- DimPlot(alsaigh.telo.EC, group.by = "Region", reduction = "umap", cols = c("firebrick3", "deepskyblue3"), label = TRUE, label.size = 6, pt.size = 8, repel = TRUE, raster = TRUE, raster.dpi = c(1000,1000)) + NoLegend() + force_panelsizes(rows = unit(2.25, "in"), cols = unit(2.25, "in")) + scale_x_reverse() +
+theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title = element_text(size=20),
+        axis.line = element_blank(),
+        axis.ticks = element_line(size=1),
+        panel.border = element_rect(size=2, colour = "black"))
+dimplot2
+
+# Output per cluster QC stats for EC subset
+# Get cluster names from active.ident
+alsaigh.telo.EC.cluster_names <- alsaigh.telo.EC@active.ident
+# Calculate cells per cluster
+alsaigh.telo.EC.cell_counts <- table(alsaigh.telo.EC.cluster_names)
+# Calculate median nFeature_RNA per cluster
+alsaigh.telo.EC.median_nfeature_rna_per_cluster <- aggregate(nFeature_RNA ~ alsaigh.telo.EC.cluster_names, data = alsaigh.telo.EC@meta.data, FUN = median)
+# Calculate median nCount_RNA per cluster
+alsaigh.telo.EC.median_ncount_rna_per_cluster <- aggregate(nCount_RNA ~ alsaigh.telo.EC.cluster_names, data = alsaigh.telo.EC@meta.data, FUN = median)
+# Calculate median percent.mt per cluster
+alsaigh.telo.EC.median_percent_MT_per_cluster <- aggregate(percent.MT ~ alsaigh.telo.EC.cluster_names, data = alsaigh.telo.EC@meta.data, FUN = median)
+# Merge all information into a single dataframe
+result_table <- data.frame(
+    Cells_Per_Cluster = as.numeric(alsaigh.telo.EC.cell_counts),
+    Median_nFeature_RNA = alsaigh.telo.EC.median_nfeature_rna_per_cluster$nFeature_RNA,
+    Median_nCount_RNA = alsaigh.telo.EC.median_ncount_rna_per_cluster$nCount_RNA,
+    Median_Percent_MT = alsaigh.telo.EC.median_percent_MT_per_cluster$percent.MT,
+    row.names = alsaigh.telo.EC.median_nfeature_rna_per_cluster$alsaigh.telo.EC.cluster_names
+)
+# Print the result
+print(result_table)
+
+# Cells in each cluster per sample
+Harmony_subset_table_QC_2 <- table(Idents(alsaigh.telo.EC), alsaigh.telo.EC$orig.ident)
+Harmony_subset_table_QC_2 
+
+# Markers for EC subset (AC vs. PA)
+alsaigh.telo.EC.join <- JoinLayers(alsaigh.telo.EC)
+aslaigh.telo.EC.ACvsPA.markers <- FindMarkers(alsaigh.telo.EC.join, group.by = "Region", ident.1 = "AC", ident.2 = "PA")
+
+### Extract row names from input dataframes
+row.names.telo.KOvsCtrl <- rownames(contrast.Ch)
+row.names.aslaigh.telo.EC.ACvsPA.markers <- rownames(aslaigh.telo.EC.ACvsPA.markers)
+common.row.names <- intersect(row.names.telo.KOvsCtrl, row.names.aslaigh.telo.EC.ACvsPA.markers)
+
+### Filter dataframes based on common row names
+df.telo.KOvsCtrl <- contrast.Ch[common.row.names, c("log2FoldChange","padj"), drop = FALSE]
+df.aslaigh.telo.EC.ACvsPA.markers <- aslaigh.telo.EC.ACvsPA.markers[common.row.names, c("avg_log2FC","p_val_adj"), drop = FALSE]
+
+### Create new dataframe for correlation
+harmony.KO.telovsaslaigh.EC.corr.table <- data.frame(
+  FC.telo.KOvsCtrl = df.telo.KOvsCtrl$log2FoldChange,
+  FDR.telo.KOvsCtrl = df.telo.KOvsCtrl$padj,
+  FC.aslaigh.telo.EC.ACvsPA.markers = df.aslaigh.telo.EC.ACvsPA.markers$avg_log2FC,
+  FDR.aslaigh.telo.EC.ACvsPA.markers = df.aslaigh.telo.EC.ACvsPA.markers$p_val_adj,
+  row.names = common.row.names
+)
+harmony.KO.telovsaslaigh.EC.corr.table$score.telo.KOvsCtrl <- sign(harmony.KO.telovsaslaigh.EC.corr.table$FC.telo.KOvsCtrl) * -log10(harmony.KO.telovsaslaigh.EC.corr.table$FDR.telo.KOvsCtrl)
+harmony.KO.telovsaslaigh.EC.corr.table$score.aslaigh.telo.EC.ACvsPA.markers <- sign(harmony.KO.telovsaslaigh.EC.corr.table$FC.aslaigh.telo.EC.ACvsPA.markers) * -log10(harmony.KO.telovsaslaigh.EC.corr.table$FDR.aslaigh.telo.EC.ACvsPA.markers)
+harmony.KO.telovsaslaigh.EC.corr.table <- harmony.KO.telovsaslaigh.EC.corr.table[, c("FC.telo.KOvsCtrl", "FDR.telo.KOvsCtrl", "score.telo.KOvsCtrl",
+             "FC.aslaigh.telo.EC.ACvsPA.markers", "FDR.aslaigh.telo.EC.ACvsPA.markers", "score.aslaigh.telo.EC.ACvsPA.markers")]
+harmony.KO.telovsaslaigh.EC.corr.table <- harmony.KO.telovsaslaigh.EC.corr.table %>%
+  mutate(sig = case_when(
+    score.telo.KOvsCtrl > -log10(0.05) & score.aslaigh.telo.EC.ACvsPA.markers > -log10(0.05) & row.names(.) %in% EndMT.markers.human ~ "up",
+    score.telo.KOvsCtrl < log10(0.05) & score.aslaigh.telo.EC.ACvsPA.markers < log10(0.05) & row.names(.) %in% EC.markers.human ~ "down",
+    TRUE ~ "no"
+  ))
+harmony.KO.telovsaslaigh.EC.corr.table$label <- NA
+EC.corr.list <- c("CYTL1", "PLEKHG1", "FZD4", "ECSCR", "IFITM1", "IGFBP4", "NOSTRIN", "ADAMTS9")
+EndMT.corr.list <- c("FN1", "S100A4", "LTBP2", "COL8A1", "TIMP1", "SERPINE1", "FBLN5", "CFH")
+harmony.KO.telovsaslaigh.EC.corr.table <- harmony.KO.telovsaslaigh.EC.corr.table %>%
+  mutate(label = ifelse((row.names(.) %in% EC.corr.list) | (row.names(.) %in% EndMT.corr.list), row.names(harmony.KO.telovsaslaigh.EC.corr.table), NA))
+harmony.KO.telovsaslaigh.EC.corr.table$sig <- factor(harmony.KO.telovsaslaigh.EC.corr.table$sig, levels = c("no", "down", "up"))
+harmony.KO.telovsaslaigh.EC.corr.table <- harmony.KO.telovsaslaigh.EC.corr.table[order(harmony.KO.telovsaslaigh.EC.corr.table$sig), ]
+
+### Plot correlation
+harmony.KO.telovsaslaigh.EC.correlation1 <- ggplot(data = harmony.KO.telovsaslaigh.EC.corr.table, aes(x = score.telo.KOvsCtrl, y = score.aslaigh.telo.EC.ACvsPA.markers, label = label)) +
+    geom_hline(yintercept = 0, col = "black") +
+    geom_vline(xintercept = 0, col = "black") + 
+    geom_smooth(method = lm, formula = y ~ x, aes(group=1)) +
+    rasterize(geom_point(data = harmony.KO.telovsaslaigh.EC.corr.table[harmony.KO.telovsaslaigh.EC.corr.table$sig == "no", ], aes(color = "No"), size = 2), dpi=200) +
+    geom_point(data = harmony.KO.telovsaslaigh.EC.corr.table[harmony.KO.telovsaslaigh.EC.corr.table$sig == "down", ], aes(color = "EC"), size = 2) +
+    geom_point(data = harmony.KO.telovsaslaigh.EC.corr.table[harmony.KO.telovsaslaigh.EC.corr.table$sig == "up", ], aes(color = "Mes"), size = 2) +
+    geom_label_repel(data = harmony.KO.telovsaslaigh.EC.corr.table[harmony.KO.telovsaslaigh.EC.corr.table$sig == "down", ], xlim = c(0, 300), ylim = c(0, -300), size = 5.6667, max.overlaps = Inf) +
+    geom_label_repel(data = harmony.KO.telovsaslaigh.EC.corr.table[harmony.KO.telovsaslaigh.EC.corr.table$sig == "up", ], xlim = c(0, -300), ylim = c(0, 300), size = 5.6667, max.overlaps = Inf) +
+    NoLegend() +
+    coord_cartesian(xlim = c(-300, 300)) +
+    scale_color_manual(values = c("deepskyblue3", "firebrick3", "grey"),
+        labels = c("EC", "Mes", "No")) +
+    stat_cor(aes(group=1, label = paste(..rr.label.., ..p.label.., sep = "~`,`~"))) +
+    labs(x = "TeloHAEC ERG KO enrichment score", y = "Human plaque enrichment score",
+        title = "ERG KO vs. human atherosclerosis")
+harmony.KO.telovsaslaigh.EC.correlation2 <- harmony.KO.telovsaslaigh.EC.correlation1 + force_panelsizes(rows = unit(5.24, "in"), cols = unit(5.24, "in")) + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title.x = element_text(face = "plain", size=20),
+        axis.title.y = element_text(face = "plain", size=20),
+        panel.border = element_rect(size=2, colour = "black"),
+        axis.ticks = element_line(size=1),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+harmony.KO.telovsaslaigh.EC.correlation2
+
+# Feature plots
+alsaigh_telo_EC_plot_feature_EC.grid <- FeaturePlot(alsaigh.telo.EC, features = c("ADAMTS9", "CYTL1", "FZD4", "PLEKHG1"), pt.size = 8, cols = c("grey90", "#053061"), keep.scale = "all", raster = TRUE, raster.dpi = c(1000,1000)) & scale_x_reverse() &
+        theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title = element_text(size=20),
+        axis.line = element_blank(),
+        axis.ticks = element_line(size=1),
+        legend.text = element_text(size=20),
+        panel.border = element_rect(size=2, colour = "black"))
+alsaigh_telo_EC_plot_feature_EC.grid
+
+alsaigh_telo_EC_plot_feature_EndMT.grid <- FeaturePlot(alsaigh.telo.EC, features = c("COL8A1", "FBLN5", "FN1", "S100A4"), pt.size = 8, cols = c("grey90", "#67001f"), keep.scale = "all", raster = TRUE, raster.dpi = c(1000,1000)) & scale_x_reverse() &
+        theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title = element_text(size=20),
+        axis.line = element_blank(),
+        axis.ticks = element_line(size=1),
+        legend.text = element_text(size=20),
+        panel.border = element_rect(size=2, colour = "black"))
+alsaigh_telo_EC_plot_feature_EndMT.grid
+```
