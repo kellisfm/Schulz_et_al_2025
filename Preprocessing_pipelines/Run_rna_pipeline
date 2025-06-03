@@ -1,0 +1,31 @@
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC001/CC001_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC001/CC001_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC002/CC002_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC002/CC002_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC003/CC003_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC003/CC003_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC004/CC004_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC004/CC004_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC005/CC005_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC005/CC005_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC006/CC006_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC006/CC006_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC007/CC007_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC007/CC007_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC008/CC008_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC008/CC008_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC009/CC009_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC009/CC009_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC010/CC010_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC010/CC010_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC011/CC011_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC011/CC011_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC012/CC012_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC012/CC012_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC013/CC013_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC013/CC013_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC014/CC014_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC014/CC014_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC015/CC015_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC015/CC015_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
+
+module load python;/hpf/largeprojects/mdwilson/scripts/pipeline/rna_seq.py /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC016/CC016_1.fastq.gz -f /hpf/largeprojects/mdwilson/Kai/collab/ERG/RNA/ERG_siRNA/01RawData/CC016/CC016_2.fastq.gz -t 16 -st non -mq 255 -pm -sp hsap -b -c gene -ps --minlen 36
