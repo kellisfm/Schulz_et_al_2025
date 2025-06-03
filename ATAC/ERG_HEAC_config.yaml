@@ -1,0 +1,24 @@
+#-------------------------------------------------------------------------#
+#-------------------------- TOBIAS input data ----------------------------#
+#-------------------------------------------------------------------------#
+data:
+  ERGWT: [/home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/1_RK18_47_1_R_roughuniq_sortedByPosition.bam, /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/2_RK18_47_2_R_roughuniq_sortedByPosition.bam]  #list of .bam-files
+  ERGKO: [/home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/3_RK18_47_3_R_roughuniq_sortedByPosition.bam, /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/4_RK18_47_4_R_roughuniq_sortedByPosition.bam]  #list of .bam-files
+  
+run_info:
+  effective_genome_size: 1*10^whatever                           #mouse/human/zebrafish
+  fasta: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh37.68.dna.chromosomes.fa            #.fasta-file containing organism genome
+  blacklist: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg19_encode_blacklist.bed        #.bed-file containing blacklisted regions
+  gtf: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/gencode.v19.annotation.gtf                #.gtf-file for annotation of peaks
+  motifs: /home/kellis/TOBIAS/TOBIAS_tmp_liver_run/jaspar_full/*          #motifs (directory with files or individual files in MEME/JASPAR/PFM format)
+  output: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/erg_HEAC_corrected_output                     #output directory 
+
+
+#-------------------------------------------------------------------------#
+#----------------------- Default module parameters -----------------------#
+#-------------------------------------------------------------------------#
+
+macs: "--nomodel --shift -100 --extsize 200 --broad"
+atacorrect: ""
+footprinting: ""
+bindetect: ""

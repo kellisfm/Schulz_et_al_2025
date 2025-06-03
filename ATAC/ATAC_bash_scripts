@@ -1,0 +1,75 @@
+###### deeptools calls figure 1
+computeMatrix reference-point --referencePoint center \
+-b 1000 -a 1000 \
+-R /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/deeptools_beds/*.bed \
+-S /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/erg_HEAC_corrected_output/coverage/*.bw \
+--skipZeros \
+-o /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/deeptools_outputs/erg_up_down_consistant.gz \
+-p 6 
+
+plotHeatmap -m /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/deeptools_outputs/erg_up_down_consistant.gz \
+-out /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/deeptools_outputs/erg_up_down_consistant.pdf  \
+--colorMap RdBu \
+--samplesLabel "ErgKO" "ErgWT"
+
+###### homer calls figure 1
+dbReport_27ac_down.bed hg19 /home/kellis/mnt/largeprojects/Kai/collab/ZebraChip/Data/genrich_diffbind/homer -size given -bg /home/kellis/mnt/largeprojects/Kai/collab/ZebraChip/Data/BAM/genrich_peaks/H3K27Ac_GFPnegative.narrowPeak
+
+findMotifsGenome.pl dbReport_ergKO_down_labelled.bed hg19 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/genrich_diffbind/homer_down -size given
+
+findMotifsGenome.pl dbReport_ergKO_up_labelled.bed hg19 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/genrich_diffbind/homer_up -size given
+
+findMotifsGenome.pl dbReport_ergKO_up_labelled.bed hg19 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/processed/Peaks/genrich_diffbind/homer_no_change -size given
+
+
+
+annotatePeaks.pl dbReport_ergKO_down.bed hg19 -m ere.motif foxa1.motif -size 1000 -hist 10 > outputfile.txt
+
+annotatePeaks.pl dbReport_ergKO_up_labelled.bed hg19 -m homer_up/knownResults/known3.motif homer_up/knownResults/known13.motif homer_up/knownResults/known7.motif -size 1000 -hist 10 > Homer_up_klf_fos_ap1.txt
+
+###### tobias calls figure 3
+
+cat * | bedtools sort | bedtools merge > merged_peaks.bed
+
+# sort all bam files:
+
+for f in *.bam; do filename="${f%%.*}"; samtools sort -n $f > ${filename}.namesorted.bam; done
+
+### ATAC_correct_Crispr
+TOBIAS ATACorrect --bam /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Crispr_wt.bam --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --blacklist /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg38.blacklist.bed --outdir Crispr_WT --cores 5; TOBIAS ATACorrect --bam /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Crispr_KO.bam --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --blacklist /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg38.blacklist.bed --outdir Crispr_KO --cores 5
+
+### ATAC_correct_24hr
+TOBIAS ATACorrect --bam /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/24hr_ctrlsirna_merged.bam --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --blacklist /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg38.blacklist.bed --outdir Ctrl_24hr --cores 5; TOBIAS ATACorrect --bam /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/24hr_ERGsirna_merged.bam --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --blacklist /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg38.blacklist.bed --outdir KO_24hr --cores 5
+
+### ATAC_correct_72hr
+TOBIAS ATACorrect --bam /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/72hr_ctrlsirna_merged.bam --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --blacklist /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg38.blacklist.bed --outdir Ctrl_72hr --cores 5; TOBIAS ATACorrect --bam /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/72hr_ERGsirna_merged.bam --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --blacklist /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg38.blacklist.bed --outdir KO_72hr --cores 5
+
+### footprinting_Crispr
+TOBIAS FootprintScores --signal /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/Crispr_WT/Crispr_wt_corrected.bw --regions /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --output Crispr_WT/Crispr_WT_footprints.bw --cores 5; TOBIAS FootprintScores --signal /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/Crispr_KO/Crispr_KO_corrected.bw --regions /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --output Crispr_KO/Crispr_KO_footprints.bw --cores 5;
+
+### Footprinting_24hr
+TOBIAS FootprintScores --signal /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/Ctrl_24hr/24hr_ctrlsirna_merged_corrected.bw --regions /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --output Ctrl_24hr/Ctrl_24hr_footprints.bw --cores 5; TOBIAS FootprintScores --signal /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/KO_24hr/24hr_ERGsirna_merged_corrected.bw --regions /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --output KO_24hr/KO_24hr_footprints.bw --cores 5;
+
+### footprinting_72hr
+TOBIAS FootprintScores --signal /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/Ctrl_72hr/72hr_ctrlsirna_merged_corrected.bw --regions /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --output Ctrl_72hr/Ctrl_72hr_footprints.bw --cores 5; TOBIAS FootprintScores --signal /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/KO_72hr/72hr_ERGsirna_merged_corrected.bw --regions /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/ERG_merged_peaks.bed --output KO_72hr/KO_72hr_footprints.bw --cores 5;
+
+
+### format target motifs:
+TOBIAS FormatMotifs --input jaspar_full/*.jaspar --task join --output joined_motifs.jaspar
+TOBIAS FormatMotifs --input /home/kellis/TOBIAS/JASPAR_FULL/joined_motifs.jaspar --output ERG_Expressed_motifs.jaspar --filter TOBIAS_tmp_ERG_run/Reduced_motifs_timecourse_2024.txt
+
+### run BINDetect  --- best to use annotated peaks for this - the annotations will be kept into the final file
+TOBIAS BINDetect --motifs /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/ERG_Expressed_motifs.jaspar --signals Crispr_WT/Crispr_WT_footprints.bw Crispr_KO/Crispr_KO_footprints.bw Ctrl_24hr/Ctrl_24hr_footprints.bw KO_24hr/KO_24hr_footprints.bw  Ctrl_72hr/Ctrl_72hr_footprints.bw KO_72hr/KO_72hr_footprints.bw --genome /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh38.11.dna.chromosomes.fa --peaks /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/inputs/Peaks/merged_anno_peaks.bed --outdir BINDetect_output_all_motifs --cond_names Crispr_WT Crispr_KO Ctrl_24hr KO_24hr Ctrl_72hr KO_72hr --cores 14
+
+
+## homer calls figure 3
+findMotifsGenome.pl /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/24h_ERGKO_downregulated.bed hg38 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_downregulated_24h_homer
+findMotifsGenome.pl /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/24h_ergko_Upregulated.bed hg38 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_upregulated_24h_homer
+findMotifsGenome.pl /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/72h_sig_upregulated.bed hg38 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_upregulated_72h_homer
+findMotifsGenome.pl /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_v_Ctrl_72h_significant_downregulated.bed hg38 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_downregulated_72h_homer
+findMotifsGenome.pl /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/CRISPR_sig_upregulated.bed hg38 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_upregulated_CRISPR_homer
+findMotifsGenome.pl /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_v_Ctrl_CRISPR_significant_downregulated.bed hg38 /home/kellis/mnt/largeprojects/Kai/collab/ERG/ATAC/2024_timecourse/pseudoDiffbind/ERGKO_downregulated_CRISPR_homer
+
+
+
+
