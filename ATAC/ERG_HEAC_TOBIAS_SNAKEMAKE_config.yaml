@@ -6,7 +6,7 @@ data:
   ERGKO: [/home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/3_RK18_47_3_R_roughuniq_sortedByPosition.bam, /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/4_RK18_47_4_R_roughuniq_sortedByPosition.bam]  #list of .bam-files
   
 run_info:
-  effective_genome_size: 1*10^whatever                           #mouse/human/zebrafish
+  effective_genome_size: 2864785220                           #mouse/human/zebrafish
   fasta: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/Homo_sapiens.GRCh37.68.dna.chromosomes.fa            #.fasta-file containing organism genome
   blacklist: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/hg19_encode_blacklist.bed        #.bed-file containing blacklisted regions
   gtf: /home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/gencode.v19.annotation.gtf                #.gtf-file for annotation of peaks
